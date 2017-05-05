@@ -1,0 +1,59 @@
+### Welcome to the UDPing network measurement tool.
+
+The purpose of UDPing is to measure latency and packet loss across a link.  It does this by sending a continuous stream of packets from a source to a destination, measuring latency and loss at the destination, and periodically outputting summary performance metrics.
+
+UDPing has many useful features, including:
+* Efficient implementation - typical sampling rates are 100/second
+* Randomized Poisson sampling intervals
+* Multiple source ports (to exercise multiple ECMP paths)
+* Ability to specify multiple next-hop MAC addresses
+* Varied payload sizes
+* Supports multiple output formats, including JSON to stdout and ymonsb
+* True one-way protocol - no information is sent from server to client
+
+## Usage
+
+`udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> -s <starting port> -n <number of ports> -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> [-v] [-q]`
+
+`udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-v] [-q]`
+
+## How it works
+
+The UDPing client publishes a stream of UDP packets from a client to a server with a header and a varying length payload, with an average interval specified by the -d switch.  The payload size is randomized from zero to MAX - the size of the header, where MAX is specified by the -m switch on the client.  The packets are sent in groups according to a measurement period, specified by the -i switch.  Packets for a measurement period from a single port share a common GUID.  At the end of the measurement period, a control packet is sent from each port with the total packet count for the period.
+
+As the server receives packets, it timestamps them on arrival and records several counters, including
+* Count
+* Sum of latency
+* Sum of squares of latency
+* Max latency
+
+Upon receipt of a control packet, the server dumps several metrics to stdout, a ymon scoreboard, or both, including
+* Count
+* Expected count
+* Sum of latency
+* Sum of squares of latency
+* Max latency
+
+If the server does not receive a control packet within a keepalive timeout specified by the -k switch, it will output metrics with a zero expected count.
+
+Metrics emitted to stdout are at the source host:port level.  Metrics emitted to the scoreboard can either be at the host level only, or at the host level and the host:port level, as specified in the -s switch on the server.
+
+At least one next-hop MAC address must be specified with the -a switch on the client.  This should ordinarily be set to the MAC address of the default gateway for the client.  If more than one egress path is desired, multiple next-hops can be separated by commas.
+
+## Protocol
+
+The header is defined by the following struct:
+
+    typedef struct {
+        char guid[MAX_GUID + 1]; // Unique identifier for a stream of packets
+        int controlPacket;       // 0 if this is a data packet, 1 if it is a control packet
+        int seqNum;              // Sequence number for a data packet
+        int timestampCount;      // Number of timestamps in the packet (always 1)
+        struct timespec sent;    // High-resolution sender timestamp (resolution dependent on system clock resolution)
+        int size;                // Size of the packet, including the header and the payload
+    } packet;
+
+A normal packet also includes a payload of random size, up to MAX - sizeof(packet), where MAX is specified by the -m switch on the client.
+
+This code is licensed under Apache License 2.0 as per the License file and contains code from the reference implementation in RFC 1071.
+
