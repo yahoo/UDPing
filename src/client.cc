@@ -69,7 +69,6 @@ int main( int argc, char **argv ) {
         startTimer(&iter_start);
         ClientSession* session = sessions.getNextSession();
         if (session->rollover()) {
-            session->sendControlPacket();
             session->reset();
         }
         (void) session->sendPingPacket();

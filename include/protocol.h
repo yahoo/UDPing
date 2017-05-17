@@ -11,12 +11,11 @@
 using namespace std;
 
 typedef struct {
+    time_t clientStartTime; // Holds the creation time for the client session - used by the server to differentiate between runs
     char guid[MAX_GUID + 1];
-    int controlPacket;
-    int seqNum;
-    int timestampCount;
+    seqnum_t seqNum; // This should be some flavor of uint so that the math works out when it wraps.
     struct timespec sent;
-    int size;
+    uint32_t size;
 } packet;
 
 typedef struct {

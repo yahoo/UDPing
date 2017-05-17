@@ -10,35 +10,38 @@ using namespace std;
 
 class ServerSession {
     private:
-        string peer;
-        string guid;
-        string application;
-        time_t firstArrival;
+        time_t clientStartTime;
+        // Successor is the next serversession for the same host and port.
+        // Used to detect missing packets at the end of a stream.
+        string successor; 
         time_t lastArrival;
-        int scoreboardLevel;
-        int firstSession;
+        seqnum_t minSeq;
+        seqnum_t maxSeq;
         Stats* stats;
-        StatsConsoleWriter* consoleWriter;
+        StatsWriterSet* statsWriters;
     public:
-        ServerSession (string peer, string guid, int port, int sourceExists);
+        ServerSession (string peer, int port, packet* p);
         ~ServerSession ();
         void writeStats();
-        string getPeer () {return peer;}
-        string getGuid () {return guid;}
+        void recordSeq (seqnum_t seqNum);
+        void setSuccessor (string successor) {this->successor = successor;}
+        string getSuccessor () {return successor;}
         Stats* getStats () {return stats;}
         void setLastArrival (time_t t) {lastArrival = t;}
         time_t getLastArrival () {return lastArrival;}
+        time_t getClientStartTime () {return clientStartTime;}
+        seqnum_t getMinSeq () {return minSeq;}
 };
 
 class ServerSessionManager {
     private:
         map<string, ServerSession*> sessionMap;
-        map<string, string> sourceMap;
+        map<string, ServerSession*> sourceMap;
         map<long, string> hostMap;
         int intervalPacketsReceived;
         int keepalive;
     private:
-        ServerSession* getServerSession (string peer, string guid, int port);
+        ServerSession* getServerSession (string peer, int port, packet* p);
         void sweepServerSessions ();
         void receivePing (packet* ph, struct timespec* rcvd, string peer, int port);
     public:

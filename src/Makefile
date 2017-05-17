@@ -2,7 +2,7 @@ default: clean client server
 
 CXX = g++
 COMMONOBJ = options.o delay.o protocol.o stats.o 
-CPPFLAGS = -I../include -I /home/y/include -g
+CPPFLAGS = -I../include -I /home/y/include -O3
 LDFLAGS = -L/home/y/lib64 -Wl,-rpath,/home/y/lib64
 LIBS = -lrt -lm -lymonsb2
 

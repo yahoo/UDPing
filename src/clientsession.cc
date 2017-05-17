@@ -83,6 +83,8 @@ ClientSession::ClientSession(int port, string dstMacs, ClientSessionList* parent
     this->parent = parent;
     lastRollover = 0;
     memset (&p, 0, sizeof(paddedPacket));
+    p.header.clientStartTime = time(0);
+    p.header.seqNum = 0;
     reset();
 }
 
@@ -102,28 +104,12 @@ bool ClientSession::rollover() {
     return true;
 }
 
-/* 
- * This assumes that the ping header has already been populated
- * with a GUID.  It sets the control packet and timestamp numbers
- * and sends.
- */
-void ClientSession::sendControlPacket () {
-    p.header.controlPacket = 1;
-    p.header.timestampCount = 0;
-    memset (&(p.header.sent), 0, sizeof(struct timespec));
-    sendPacket(sizeof(packet));
-}
-
 /*
  * Resets a client session.  This is done by resetting the sequence
  * number and generating a new GUID.
  */
 void ClientSession::reset () {
-    memset (&p.header, 0, sizeof(packet));
     generateGuid(p.header.guid, MAX_GUID);
-    p.header.controlPacket = 0;
-    p.header.seqNum = 1;
-    p.header.timestampCount = 0;
 }
 
 /*
@@ -140,14 +126,13 @@ void ClientSession::increment() {
  * the ping header, sets the timestamp, and sends the ping
  */
 void ClientSession::sendPingPacket () {
-    p.header.timestampCount = 1;
     clock_gettime(CLOCK_REALTIME, &(p.header.sent));
     int size = rand() % this->parent->getMaxPacketSize();
     sendPacket(size);
 }
 
 int ClientSession::sendPacket (int size) {
-    if (size < sizeof(packet)) size = sizeof(packet) + 1;
+    if (size < sizeof(packet)) size = sizeof(packet);
     p.header.size = size;
     int n_sent = sendMessage (
                 parent->getSocketFD(),
@@ -162,7 +147,7 @@ int ClientSession::sendPacket (int size) {
                 size,
                 sizeof(packet));
 
-    if (n_sent<0) {
+    if (n_sent < 0) {
         warn ("Problem sending data");
         exit (-1);
     }

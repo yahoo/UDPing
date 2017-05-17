@@ -3,6 +3,7 @@
 #include "stats.h"
 #include "constants.h"
 #include <string>
+#include <set>
 
 #ifndef STATSWRITER__H
 #define STATSWRITER__H 1
@@ -22,6 +23,16 @@ class StatsConsoleWriter : public StatsWriter {
         int port;
     public:
         StatsConsoleWriter (string guid, string peer, string hostname, int port);
+        void writeStats (Stats* stats);
+};
+
+class StatsWriterSet {
+    private:
+        string guid;
+        string peer;
+        int port;
+    public:
+        StatsWriterSet (string guid, string peer, int port);
         void writeStats (Stats* stats);
 };
 

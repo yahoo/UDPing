@@ -17,46 +17,59 @@
 #include "constants.h"
 #include "serversession.h"
 
-ServerSession::ServerSession (string peer, string guid, int port, int sourceExists) {
-    this->peer = peer;
-    this->guid = guid;
-    if (!sourceExists) {
-        firstSession = 1;
-    } else {
-        firstSession = 0;
-    }
-    firstArrival = 0;
+ServerSession::ServerSession (string peer, int port, packet* p) {
+    this->minSeq = p->seqNum;
+    this->maxSeq = p->seqNum;
+    this->clientStartTime = p->clientStartTime;
     lastArrival = 0;
-    char hostname[MAX_PEER + 1];
-    gethostname(hostname, MAX_PEER + 1);
     stats = new Stats ();
-    consoleWriter = new StatsConsoleWriter (guid, peer, hostname, port);
+    statsWriters = new StatsWriterSet(p->guid, peer, port);
 }
 
 ServerSession::~ServerSession () {
     delete stats;
-    delete consoleWriter;
+    delete statsWriters;
 }
 
 void ServerSession::writeStats() {
-    if (!getOptions()->getQuiet()) {
-        consoleWriter->writeStats(stats);
+    seqnum_t targetCount = 1 + maxSeq - minSeq;
+    stats->setTargetCount(targetCount);
+    statsWriters->writeStats(stats);
+}
+
+// This needs work to deal with out of order packets
+// Possibly compare the difference between values (maxSeq - seqNum) which will wrap around
+void ServerSession::recordSeq(seqnum_t seqNum) {
+    seqnum_t diff;
+    diff = seqNum - maxSeq;
+    if ((diff > 0) && (diff < 10)) {
+        maxSeq = seqNum;
+    }
+    diff = minSeq - seqNum;
+    if ((diff > 0) && (diff < 10)) {
+        minSeq = seqNum;
     }
 }
 
 /*
  * ServerSessionManager methods
  */
-
-ServerSession* ServerSessionManager::getServerSession (string peer, string guid, int port) {
-    if (!sessionMap.count(guid)) {
+ServerSession* ServerSessionManager::getServerSession (string peer, int port, packet* p) {
+    if (!sessionMap.count(p->guid)) {
         stringstream source;
         source << peer << ":" << port;
-        ServerSession* ds = new ServerSession(peer, guid, port, sourceMap.count(source.str()));
-        sessionMap[guid] = ds;
-        sourceMap[source.str()] = "";
+        ServerSession* ds = new ServerSession(peer, port, p);
+        // Set the successor for the outgoing session, so that when it times out it checks for
+        // a gap in the packet sequence.  This would indicate a lost packet at the end of
+        // a session.
+        ServerSession* predecessor = sourceMap[source.str()];
+        if (predecessor && (predecessor->getClientStartTime() == ds->getClientStartTime())) {
+            predecessor->setSuccessor(p->guid);
+        }
+        sessionMap[p->guid] = ds;
+        sourceMap[source.str()] = ds;
     }
-    return sessionMap[guid];
+    return sessionMap[p->guid];
 }
 
 void ServerSessionManager::sweepServerSessions () {
@@ -65,6 +78,12 @@ void ServerSessionManager::sweepServerSessions () {
     for (map<string, ServerSession*>::iterator it = sessionMap.begin(); it != sessionMap.end(); it++) {
         ServerSession* ds = it->second;
         if (ds->getLastArrival() < now - keepalive) {
+            // If the session has a successor, set the max packet index to one before the
+            // successor's minimum index to detect gaps in the packet sequence between sessions
+            ServerSession* successor = sessionMap[ds->getSuccessor()];
+            if (successor) {
+                ds->recordSeq(successor->getMinSeq() - 1);
+            }
             ds->writeStats();
             delete ds;
             sessionMap.erase(it->first);
@@ -72,22 +91,13 @@ void ServerSessionManager::sweepServerSessions () {
     }
 }
 
-
 void ServerSessionManager::receivePing (packet* ph, struct timespec* rcvd, string peer, int port) {
     intervalPacketsReceived++;
-    ServerSession* ds = getServerSession(peer, ph->guid, port);
+    ServerSession* ds = getServerSession(peer, port, ph);
     ds->setLastArrival(time(0));
-    if (ph->controlPacket) {
-        ds->getStats()->setTargetCount (ph->seqNum - 1);
-    } else {
-        double elapsed = 1000000000L * (rcvd->tv_sec - ph->sent.tv_sec) + rcvd->tv_nsec - ph->sent.tv_nsec;
-        ds->getStats()->addDataPoint (getSeqNum(ph), elapsed/1000000);
-    }
-    if (ds->getStats()->getCount() == ds->getStats()->getTargetCount()) {
-        ds->writeStats();
-        delete ds;
-        sessionMap.erase(ph->guid);
-    }
+    ds->recordSeq(ph->seqNum);
+    double elapsed = 1000000000L * (rcvd->tv_sec - ph->sent.tv_sec) + rcvd->tv_nsec - ph->sent.tv_nsec;
+    ds->getStats()->addDataPoint (elapsed/1000000);
     sweepServerSessions();
 }
 

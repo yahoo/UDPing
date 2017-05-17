@@ -1,7 +1,5 @@
 // Copyright 2017 Yahoo Inc.
 // Licensed under the terms of the Apache 2.0 License. See LICENSE file in the project root for terms.
-// This file includes code from RFC 1071 https://tools.ietf.org/html/rfc1071 indicated in the comments below
-// By default, RFC code is made available under a BSD-like license and under the copyright of the RFC author.
 #include <arpa/inet.h>
 #include <err.h>
 #include <linux/if_ether.h>   // ETH_P_IP = 0x0800, ETH_P_IPV6 = 0x86DD
@@ -29,8 +27,7 @@ void dumpBuffer (char* buf) {
         return;
     }
     packet* ph = (packet*) buf;
-    printf ("%s:%d:%d:%d\n", ph->guid, ph->controlPacket, ph->seqNum, ph->timestampCount);
-    printf ("  %ld:%ld\n", ph->sent.tv_sec, ph->sent.tv_nsec);
+    printf ("%s:%ld:%d - %ld:%ld\n", ph->guid, ph->clientStartTime, ph->seqNum, ph->sent.tv_sec, ph->sent.tv_nsec);
 }
 
 // Allocates a sockaddr* and returns it.
@@ -157,29 +154,34 @@ int buildFrame (struct frame *etherFrame, uint8_t *srcMac, uint8_t *dstMac, uint
 
 // Computing the internet checksum (RFC 1071).
 // Note that the internet checksum does not preclude collisions.
-uint16_t checksum (uint16_t *addr, int count)
+uint16_t checksum (uint16_t *addr, int len)
 {
-    // Compute Internet Checksum for "count" bytes
-    // beginning at location "addr".
-    register long sum = 0;
+  int count = len;
+  register uint32_t sum = 0;
+  uint16_t answer = 0;
 
-    while( count > 1 )  {
-        // This is the inner loop
-        sum += *(uint16_t*)addr++;
-        count -= 2;
-    }
+  // Sum up 2-byte values until none or only one byte left.
+  while (count > 1) {
+    sum += *(addr++);
+    count -= 2;
+  }
 
-    // Add left-over byte, if any
-    if( count > 0 ) {
-        sum += * (uint8_t *) addr;
-    }
+  // Add left-over byte, if any.
+  if (count > 0) {
+    sum += *(uint8_t *) addr;
+  }
 
-    // Fold 32-bit sum to 16 bits */
-    while (sum>>16) {
-        sum = (sum & 0xffff) + (sum >> 16);
-    }
+  // Fold 32-bit sum into 16 bits; we lose information by doing this,
+  // increasing the chances of a collision.
+  // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
+  while (sum >> 16) {
+    sum = (sum & 0xffff) + (sum >> 16);
+  }
 
-    return ~sum;
+  // Checksum is one's compliment of sum.
+  answer = ~sum;
+
+  return (answer);
 }
 
 // This is a zero-copy rewrite of udp4 checksumming algorithm.

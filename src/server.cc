@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     stringstream usage;
     usage << "Usage: udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-v] [-q]" << endl <<
              "-v: verbose" << endl <<
-             "-q: quiet" << endl;
+             "-q: quiet";
     int port = getOptions()->parseIntOption('p', 1, 1024, 65536, usage.str(), "Port number is out of range 1024-65532\n");
     string host = getOptions()->getStringOption('l', 1, usage.str(), "Hostname not provided\n");
     int keepalive = getOptions()->parseIntOption('k', 1, 1, 60, usage.str(), "Keepalive interval is out of range 1-60s\n");
