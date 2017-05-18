@@ -11,6 +11,7 @@
 using namespace std;
 
 typedef struct {
+    uint8_t protoVersion;
     time_t clientStartTime; // Holds the creation time for the client session - used by the server to differentiate between runs
     char guid[MAX_GUID + 1];
     seqnum_t seqNum; // This should be some flavor of uint so that the math works out when it wraps.

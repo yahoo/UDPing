@@ -11,5 +11,6 @@
 #define MAX_PEER 128
 #define MAX_GUID 20
 #define MAXBUF 2000
+#define PROTOVERSION 1
 
 typedef uint32_t seqnum_t;

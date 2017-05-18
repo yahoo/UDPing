@@ -77,12 +77,14 @@ void ServerSessionManager::sweepServerSessions () {
     time_t now = time(0);
     for (map<string, ServerSession*>::iterator it = sessionMap.begin(); it != sessionMap.end(); it++) {
         ServerSession* ds = it->second;
-        if (ds->getLastArrival() < now - keepalive) {
+        if (ds && (ds->getLastArrival() < now - keepalive)) {
             // If the session has a successor, set the max packet index to one before the
             // successor's minimum index to detect gaps in the packet sequence between sessions
-            ServerSession* successor = sessionMap[ds->getSuccessor()];
-            if (successor) {
-                ds->recordSeq(successor->getMinSeq() - 1);
+            if (sessionMap.find(ds->getSuccessor()) != sessionMap.end()) {
+                ServerSession* successor = sessionMap[ds->getSuccessor()];
+                if (successor) {
+                    ds->recordSeq(successor->getMinSeq() - 1);
+                }
             }
             ds->writeStats();
             delete ds;
@@ -114,6 +116,8 @@ int ServerSessionManager::readNextPacket (int fd) {
         warn("Malformed packet - size %d is less than header size %d", n, sizeof(packet));
     } else if (n != ph->size) {
         warn("Malformed packet - expected %d, got %d", ph->size, n);
+    } else if (ph->protoVersion != PROTOVERSION) {
+        warn("Incorrect protocol version.  Expected %d, got %d", PROTOVERSION, ph->protoVersion);
     } else {
         clock_gettime(CLOCK_REALTIME, &tv);
         dumpBuffer(buf);
