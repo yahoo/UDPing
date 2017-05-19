@@ -83,6 +83,7 @@ ClientSession::ClientSession(int port, string dstMacs, ClientSessionList* parent
     this->parent = parent;
     lastRollover = 0;
     memset (&p, 0, sizeof(paddedPacket));
+    p.header.protoVersion = PROTOVERSION;
     p.header.clientStartTime = time(0);
     p.header.seqNum = 0;
     reset();
