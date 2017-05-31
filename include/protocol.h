@@ -8,6 +8,9 @@
 #include <netinet/udp.h>
 #include <string>
 
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
 using namespace std;
 
 typedef struct {
@@ -27,6 +30,7 @@ typedef struct {
 
 int getSeqNum (packet* ph);
 void dumpBuffer (char* buf);
+int makeSocket (string host, int port);
 struct sockaddr* getSockAddr (string host, int port);
 int sendMessage(
                 int socketFD, 
@@ -57,3 +61,4 @@ struct frame {
 
 int buildFrame (struct frame *etherFrame, uint8_t *srcMac, uint8_t *dstMac, uint32_t srcIp, uint32_t dstIp, int srcPort, int dstPort, const char *message, int datalen, int checksumLength);
 
+#endif

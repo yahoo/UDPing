@@ -22,7 +22,8 @@ Options::Options (int argc, char** argv, string optstring) {
             exit(-1);
         }
         if (optarg) {
-            options[opt] = optarg;
+            options[opt] = new char[strlen(optarg) + 1];
+            strcpy(options[opt], optarg);
         } else {
             options[opt] = (char*)1;
         }

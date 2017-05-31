@@ -2,6 +2,7 @@
 // Licensed under the terms of the Apache 2.0 License. See LICENSE file in the project root for terms.
 #include "stats.h"
 #include "constants.h"
+#include "protocol.h"
 #include <string>
 #include <set>
 
@@ -10,20 +11,17 @@
 
 using namespace std;
 
-class StatsWriter {
+class StatsConsoleWriter {
     public:
-        virtual void writeStats (Stats* stats) = 0;
+        static void writeStats (Stats* stats, string guid, string peer, string hostname, int port);
 };
 
-class StatsConsoleWriter : public StatsWriter {
+class StatsStatsdWriter {
     private:
-        string guid;
-        string peer;
-        string hostname;
-        int port;
+        static int fd;
+        static sockaddr* sa;
     public:
-        StatsConsoleWriter (string guid, string peer, string hostname, int port);
-        void writeStats (Stats* stats);
+        static void writeStats (Stats* stats, string peer, int port, string hostname, int localPort, char* statsdInfo);
 };
 
 class StatsWriterSet {

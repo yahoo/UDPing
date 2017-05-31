@@ -47,7 +47,6 @@ class ServerSessionManager {
     public:
         ServerSessionManager(int theKeepalive);
         int readNextPacket (int fd);
-        int makeSocket (string host, int port);
         void handleAlarm (int sig);
 };
 

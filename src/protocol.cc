@@ -9,14 +9,16 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
-#include <time.h>
 #include <unistd.h>
 #include "protocol.h"
 #include "options.h"
 #include "stats.h"
 #include "constants.h"
+
+#include <ctime>
+#include <cstring>
+#include <sstream>
 
 int getSeqNum (packet* ph) {
     return ph->seqNum;
@@ -28,6 +30,28 @@ void dumpBuffer (char* buf) {
     }
     packet* ph = (packet*) buf;
     printf ("%s:%ld:%d - %ld:%ld\n", ph->guid, ph->clientStartTime, ph->seqNum, ph->sent.tv_sec, ph->sent.tv_nsec);
+}
+
+int makeSocket (string host, int port) {
+    int fd;
+    socklen_t length;
+    struct addrinfo* addrinfo;
+    int s;
+    if ((fd = socket( PF_INET, SOCK_DGRAM, 0 )) < 0) {
+        err(1, "Problem creating socket");
+    }
+    
+    stringstream portString;
+    portString << port;
+    if (s = getaddrinfo (host.c_str(), portString.str().c_str(), NULL, &addrinfo)) {
+        err(1, "getaddrinfo: %s\n", gai_strerror(s));
+    }
+
+    if (bind(fd, addrinfo->ai_addr, sizeof(struct sockaddr))<0) {
+        err(1, "Problem binding");
+    }
+    
+    return fd;
 }
 
 // Allocates a sockaddr* and returns it.

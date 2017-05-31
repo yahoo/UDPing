@@ -155,24 +155,3 @@ void handleAlarm (int sig) {
     }
 }
 
-int ServerSessionManager::makeSocket (string host, int port) {
-    int fd;
-    socklen_t length;
-    struct addrinfo* addrinfo;
-    int s;
-    if ((fd = socket( PF_INET, SOCK_DGRAM, 0 )) < 0) {
-        err(1, "Problem creating socket");
-    }
-    
-    stringstream portString;
-    portString << port;
-    if (s = getaddrinfo (host.c_str(), portString.str().c_str(), NULL, &addrinfo)) {
-        err(1, "getaddrinfo: %s\n", gai_strerror(s));
-    }
-
-    if (bind(fd, addrinfo->ai_addr, sizeof(struct sockaddr))<0) {
-        err(1, "Problem binding");
-    }
-    
-    return fd;
-}

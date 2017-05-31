@@ -32,12 +32,13 @@ int main(int argc, char** argv) {
         }
     }
     char buf[MAXBUF];
-    setOptions(new Options(argc, argv, "p:k:l:vq"));
+    setOptions(new Options(argc, argv, "p:k:l:s:vq"));
     
     stringstream usage;
-    usage << "Usage: udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-v] [-q]" << endl <<
+    usage << "Usage: udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]" << endl <<
+             "-s: statsd host:port (default port 8125)" << endl <<
              "-v: verbose" << endl <<
-             "-q: quiet";
+             "-q: quiet" << endl;
     int port = getOptions()->parseIntOption('p', 1, 1024, 65536, usage.str(), "Port number is out of range 1024-65532\n");
     string host = getOptions()->getStringOption('l', 1, usage.str(), "Hostname not provided\n");
     int keepalive = getOptions()->parseIntOption('k', 1, 1, 60, usage.str(), "Keepalive interval is out of range 1-60s\n");
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
     /* Periodic check to see if packets are received */
     setIntervalTimer(keepalive, handleAlarm);
     
-    int fd = sessionManager.makeSocket (host, port);
+    int fd = makeSocket (host, port);
     if (fd < 0) {
         err (1, "Failed to create socket");
     }
