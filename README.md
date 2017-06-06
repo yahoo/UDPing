@@ -8,14 +8,14 @@ UDPing has many useful features, including:
 * Multiple source ports (to exercise multiple ECMP paths)
 * Ability to specify multiple next-hop MAC addresses
 * Varied payload sizes
-* Supports multiple output formats, including JSON to stdout and ymonsb
+* Supports multiple output formats, including statsd and JSON to stdout 
 * True one-way protocol - no information is sent from server to client
 
 ## Usage
 
 `udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> -s <starting port> -n <number of ports> -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> [-v] [-q]`
 
-`udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-v] [-q]`
+`udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]
 
 ## How it works
 
@@ -45,12 +45,12 @@ At least one next-hop MAC address must be specified with the -a switch on the cl
 The header is defined by the following struct:
 
     typedef struct {
-        char guid[MAX_GUID + 1]; // Unique identifier for a stream of packets
-        int controlPacket;       // 0 if this is a data packet, 1 if it is a control packet
-        int seqNum;              // Sequence number for a data packet
-        int timestampCount;      // Number of timestamps in the packet (always 1)
-        struct timespec sent;    // High-resolution sender timestamp (resolution dependent on system clock resolution)
-        int size;                // Size of the packet, including the header and the payload
+        uint8_t protoVersion;      // Allow for evolution of protocol
+        time_t clientStartTime;    // Holds the creation time for the client session - used by the server to differentiate between runs
+        char guid[MAX_GUID + 1];   // Unique identifier for a stream of packets
+        seqnum_t seqNum;           // Monotonically increasing sequence number per client port
+        struct timespec sent;      // High-resolution sender timestamp (resolution dependent on system clock resolution)
+        uint32_t size;             // Size of the packet, including the header and the payload
     } packet;
 
 A normal packet also includes a payload of random size, up to MAX - sizeof(packet), where MAX is specified by the -m switch on the client.
