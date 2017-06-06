@@ -15,7 +15,7 @@ UDPing has many useful features, including:
 
 `udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> -s <starting port> -n <number of ports> -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> [-v] [-q]`
 
-`udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]
+`udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]`
 
 ## How it works
 
