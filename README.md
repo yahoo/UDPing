@@ -55,5 +55,5 @@ The header is defined by the following struct:
 
 A normal packet also includes a payload of random size, up to MAX - sizeof(packet), where MAX is specified by the -m switch on the client.
 
-This code is licensed under Apache License 2.0 as per the License file and contains code from the reference implementation in RFC 1071.
+This code is licensed under Apache License 2.0 as per the license file and contains code from the reference implementation in RFC 1071.
 
