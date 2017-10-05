@@ -12,6 +12,8 @@
 #include <cstdlib>
 #include <sstream>
 #include <string>
+#include <unistd.h>
+#include <sys/types.h>
 
 using namespace std;
 

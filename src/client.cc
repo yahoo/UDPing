@@ -9,6 +9,9 @@
 #include <string>
 #include <cstdlib>
 #include <pwd.h>
+#include <unistd.h>
+#include <sys/types.h>
+
 
 using namespace std;
 
