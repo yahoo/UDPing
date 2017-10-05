@@ -4,7 +4,7 @@ CXX = g++
 COMMONOBJ = options.o delay.o protocol.o stats.o 
 CPPFLAGS = -I../include -I /home/y/include -g
 LDFLAGS = -L/home/y/lib64 -Wl,-rpath,/home/y/lib64
-LIBS = -lrt -lm -lymonsb2
+LIBS = -lrt -lm
 
 client: $(COMMONOBJ) client.o clientsession.o maclist.o ifinfo.o client.o options.o delay.o protocol.o
 	$(CXX) $(LDFLAGS) $(LIBS) -o udping_client client.o options.o delay.o protocol.o clientsession.o maclist.o ifinfo.o
