@@ -44,7 +44,7 @@ int main( int argc, char **argv ) {
         exit (-1);
     }
 
-    srand (time(0));
+    srand (time(0) + getpid());
 
     ClientSessionList sessions( srcIp, startingPort, numPorts, dstHost, dstPort, dstMac, interval, maxPacketSize );
 
@@ -54,9 +54,11 @@ int main( int argc, char **argv ) {
         if (pwd && pwd->pw_uid) {
             if (setgid(pwd->pw_gid)) {
                 cerr << "Couldn't change userid to nobody (setgid failed).  Terminating client" << endl;
+                exit(-1);
             }
             if (setuid(pwd->pw_uid)) {
                 cerr << "Couldn't change userid to nobody (setuid failed).  Terminating client" << endl;
+                exit(-1);
             }
         } else {
             cerr << "Couldn't change userid to nobody.  Terminating client" << endl;
