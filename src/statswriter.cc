@@ -7,6 +7,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <sstream>
+#include <unistd.h>
+
 
 int StatsStatsdWriter::fd = 0;
 sockaddr* StatsStatsdWriter::sa = 0;

@@ -7,6 +7,7 @@ test:
 
 local:
 	cd src; make
+	mkdir -p bin
 	cp src/udping_client src/udping_server bin
 
 clean:
