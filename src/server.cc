@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
     /* Periodic check to see if packets are received */
     setIntervalTimer(keepalive, handleAlarm);
-    
+
     int fd = makeSocket (host, port);
     if (fd < 0) {
         err (1, "Failed to create socket");
