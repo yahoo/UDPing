@@ -1,6 +1,6 @@
-default: clean local test
+default: clean local 
 
-screwdriver: clean local test
+screwdriver: clean local 
 
 test:
 	cd tests; make

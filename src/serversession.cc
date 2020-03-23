@@ -113,7 +113,7 @@ int ServerSessionManager::readNextPacket (int fd) {
     if (n < 0) {
         warn("Error receiving data");
     } else if (n < sizeof(packet)) {
-        warn("Malformed packet - size %d is less than header size %d", n, sizeof(packet));
+        warn("Malformed packet - size %d is less than header size %ld", n, sizeof(packet));
     } else if (n != ph->size) {
         warn("Malformed packet - expected %d, got %d", ph->size, n);
     } else if (ph->protoVersion != PROTOVERSION) {

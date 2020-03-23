@@ -27,7 +27,7 @@ int main( int argc, char **argv ) {
     stringstream usage;
     usage << "Usage:  udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> -s <starting port> -n <number of ports> -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> [-v] [-q]" << endl;
     if (getOptions()->getFlagOption('h')) {
-        cerr << usage << endl;
+        cerr << usage.str() << endl;
         exit (0);
     }
     string dstHost = getOptions()->getStringOption ('r', 1, usage.str(), "No remote hostname provided\n");
@@ -42,7 +42,7 @@ int main( int argc, char **argv ) {
 
     MacList dstml(dstMac);
     if (dstml.getNumMacs() == 0) {
-        cerr << "Invalid next-hop MAC address string" << endl << usage;
+        cerr << "Invalid next-hop MAC address string" << endl << usage.str();
         exit (-1);
     }
 
