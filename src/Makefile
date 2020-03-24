@@ -3,7 +3,7 @@ default: clean client server
 CXX = g++
 COMMONOBJ = options.o delay.o protocol.o stats.o 
 CPPFLAGS = -I../include -I /home/y/include -g
-LDFLAGS = -L/home/y/lib64 -Wl,-rpath,/home/y/lib64
+LDFLAGS = 
 LIBS = -lrt -lm
 
 client: $(COMMONOBJ) client.o clientsession.o maclist.o ifinfo.o client.o options.o delay.o protocol.o
