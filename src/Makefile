@@ -1,4 +1,4 @@
-default: clean client server
+default: client server
 
 CXX = g++
 COMMONOBJ = options.o delay.o protocol.o stats.o 

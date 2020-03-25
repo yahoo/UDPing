@@ -7,6 +7,7 @@
 #include <err.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 #include <map>
 #include <string>
@@ -124,7 +125,11 @@ int ServerSessionManager::readNextPacket (int fd) {
         string hostName = hostMap[remote.sin_addr.s_addr];
         if (hostName.empty()) {
             struct hostent* remoteName = gethostbyaddr(&(remote.sin_addr), sizeof(struct in_addr), AF_INET);
-            hostName = hostMap[remote.sin_addr.s_addr] = remoteName->h_name;
+	    if (remoteName) {
+            	hostName = hostMap[remote.sin_addr.s_addr] = remoteName->h_name;
+	    } else {
+		hostName = hostMap[remote.sin_addr.s_addr] =  inet_ntoa(remote.sin_addr);
+	    }
         }
         receivePing (ph, &tv, hostName, ntohs(remote.sin_port));
     }
