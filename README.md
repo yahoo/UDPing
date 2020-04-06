@@ -27,7 +27,7 @@ As the server receives packets, it timestamps them on arrival and records severa
 * Sum of squares of latency
 * Max latency
 
-Upon receipt of a control packet, the server dumps several metrics to stdout, a ymon scoreboard, or both, including
+Upon receipt of a control packet, the server dumps several metrics to stdout, a statsd receiver, or both, including
 * Count
 * Expected count
 * Sum of latency
@@ -36,7 +36,7 @@ Upon receipt of a control packet, the server dumps several metrics to stdout, a 
 
 If the server does not receive a control packet within a keepalive timeout specified by the -k switch, it will output metrics with a zero expected count.
 
-Metrics emitted to stdout are at the source host:port level.  Metrics emitted to the scoreboard can either be at the host level only, or at the host level and the host:port level, as specified in the -s switch on the server.
+Metrics emitted to stdout are at the source host:port level.  Metrics emitted to statsd can either be at the host level only, or at the host level and the host:port level, as specified in the -s switch on the server.
 
 At least one next-hop MAC address must be specified with the -a switch on the client.  This should ordinarily be set to the MAC address of the default gateway for the client.  If more than one egress path is desired, multiple next-hops can be separated by commas.
 
