@@ -54,8 +54,8 @@ int main( int argc, char **argv ) {
         srcPorts = buffer.str();
     }
     int delay = getOptions()->parseIntOption('d', 1, 0, 1000, usage.str(), "Delay is out of range 0-1000 ms\n");
-    int interval = getOptions()->parseIntOption('i', 0, 1, 900, usage.str(), "Measurement interval is out of range 0-900 s\n");
-    int maxPacketSize = getOptions()->parseIntOption('m', 0, 1, MAXBUF, usage.str(), "Max packet size is out of range 1-MAXBUF\n");
+    int interval = getOptions()->parseIntOption('i', 1, 1, 900, usage.str(), "Measurement interval is out of range 0-900 s\n");
+    int maxPacketSize = getOptions()->parseIntOption('m', 1, 1, MAXBUF, usage.str(), "Max packet size is out of range 1-MAXBUF\n");
     string dstMac = getOptions()->getStringOption ('a', 1, usage.str(), "You must specify one or more next-hop MAC addresses\n");
 
     MacList dstml(dstMac);
