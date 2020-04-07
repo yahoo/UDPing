@@ -28,7 +28,8 @@ UDPing has many useful features, including:
           then source traffic from the number of sequential ports specified 
           starting with the starting port
     
-    udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]
+    udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds>
+      [-s <statsd host:port>] [-v] [-q]
 
 ## How it works
 
