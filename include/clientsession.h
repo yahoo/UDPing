@@ -5,15 +5,17 @@
 #include <constants.h>
 #include "protocol.h"
 #include "maclist.h"
+#include <list>
+#include <string>
 
 class ClientSession;
 
 class ClientSessionList {
     private:
         int numPorts;
-        int curSession;
         int maxPacketSize;
-        ClientSession** sessions;
+        list<ClientSession*> sessions;
+        list<ClientSession*>::iterator curSession;
         struct sockaddr* srcAddr;
         struct sockaddr* dstAddr;
         int ifIndex;
@@ -23,8 +25,8 @@ class ClientSessionList {
         int dstPort;
     public:
         ClientSessionList (
-                string srcIp, int startingPort, int numPorts, string dstHost, 
-                int dstPort, string dstMacList, int interval, int maxPacketSize 
+                string srcIp, string srcPorts, string dstHost, int dstPort,
+                string dstMacList, int interval, int maxPacketSize 
         );
         ~ClientSessionList ();
         ClientSession* getNextSession();
@@ -53,6 +55,7 @@ class ClientSession {
         void sendPingPacket();
         void reset();
         void increment();
+        int getPort () {return port;};
     private:
         int sendPacket (int size);
         int fillControlPacket ();

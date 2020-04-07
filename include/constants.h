@@ -5,7 +5,7 @@
 #define MIN_PORT 1024
 #define MAX_PORT 60000
 #define MAX_PORT_STRING 50
-#define MAX_SOCKETS 256
+#define MAX_SOCKETS 5000
 #define MAX_DATA_SETS 1000
 #define MAX_HOST 128
 #define MAX_PEER 128

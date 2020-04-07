@@ -20,18 +20,28 @@
 #include "clientsession.h"
 #include "ifinfo.h"
 #include <cassert>
+#include <sstream>
+#include <iostream>
 
 static const char* hexdigits = "0123456789abcdef";
 
+int isValidPort(int port) {
+    if (port < MIN_PORT) {
+        cerr << "Port too low: " << port << endl;
+        exit(-1);
+    }
+    if (port > MAX_PORT) {
+        cerr << "Port too high: " << port << endl;
+        exit(-1);
+    }
+    return 1;
+}
+
 ClientSessionList::ClientSessionList (
-                string srcHost, int startingPort, int numPorts, string dstHost, 
-                int dstPort, string dstMacList, int interval, int maxPacketSize )
+                string srcHost, string srcPorts, string dstHost, int dstPort,
+                string dstMacList, int interval, int maxPacketSize )
 {
-    assert (numPorts > 0);
-    struct addrinfo* addrinfo;
-    int s;
-    this->numPorts = numPorts;
-    this->curSession = 0;
+    this->numPorts = 0;
     this->maxPacketSize = maxPacketSize;
     this->srcAddr = getSockAddr(srcHost.c_str(), dstPort);
     this->dstAddr = getSockAddr(dstHost.c_str(), dstPort);
@@ -39,34 +49,76 @@ ClientSessionList::ClientSessionList (
     this->dstPort = dstPort;
     memset (srcMac, 0, 6);
     if (getIfInfo(srcHost.c_str(), &ifIndex, srcMac) < 0) {
+        cerr << "getIfInfo failed" << endl;
         exit (-1);
     }
     socketFD = socket (PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if (socketFD < 0) {
-        perror ("socket() failed");
+        cerr << "socket() failed" << endl;
         exit (-1);
     }
-    sessions = new ClientSession*[numPorts];
-    for (int ix = 0; ix < numPorts; ix++) {
-        sessions[ix] = new ClientSession(startingPort + ix, dstMacList, this);
+    if (string::npos != srcPorts.find_first_not_of("1234567890,-")) {
+        cerr << "Invalid source port descriptor " << srcPorts << endl;
+        exit (-1);
     }
+    char ports [1000];
+    strncpy(ports, srcPorts.c_str(), 1000);
+    char* curRange;
+    char* curRangePtr = 0 ;
+    char* pports = ports;
+    while (curRange = strtok_r(pports, ",", &curRangePtr)) {
+        pports = 0;
+        char* startString = curRange;
+        char* endString = 0;
+        if (endString = strchr(curRange, '-')) {
+            *endString = 0;
+            endString++;
+        }
+        int start = atoi(startString);
+        int end = start;
+        if (endString) {
+            end = atoi(endString);
+        }
+        if (isValidPort(start) && isValidPort(end) && (start <= end)) {
+            for (int ix = start; ix <= end; ix++) {
+                if (getOptions()->getFlagOption('v')) {
+                    cout << "Adding port " << ix << endl;
+                }
+                sessions.push_back(new ClientSession(ix, dstMacList, this));
+                this->numPorts ++;
+            }
+        } else {
+            cerr << "Invalid port range " << start << "-" << end << endl;
+            exit(-1);
+        }
+        if (sessions.size() > MAX_SOCKETS) {
+            cerr << "Too many ports defined"<< endl;
+            exit (-1);
+        }
+        if (sessions.size() == 0) {
+            cerr << "No ports defined"<< endl;
+            exit (-1);
+        }
+    }
+    this->curSession = this->sessions.begin();
 }
 
 ClientSessionList::~ClientSessionList () {
-    for (int ix = 0; ix < numPorts; ix++) {
-        delete sessions[ix];
-        sessions[ix] = 0;
+    for (curSession = sessions.begin(); curSession != sessions.end(); curSession++) {
+        delete *curSession;
     }
-    delete sessions;
     delete srcAddr;
     delete dstAddr;
 }
 
 ClientSession* ClientSessionList::getNextSession () {
-    if (curSession >= numPorts) {
-        curSession = 0;
+    ClientSession* nextSession = *curSession;
+    curSession++;
+    if (curSession == sessions.end()) {
+        curSession = sessions.begin();
     }
-    return sessions[curSession++];
+    //cout << "Fetching session for source port " << nextSession->getPort() << endl;
+    return nextSession;
 }
 
 void generateGuid (char* buffer, int buflen) {
