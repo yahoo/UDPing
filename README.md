@@ -19,7 +19,7 @@ UDPing has many useful features, including:
    *  `5000-5009 -> ports 5000,5001,...,5009`
    *  `5000,5005,5010 -> ports 5000,5005,5010`
    *  `5000-5001,5005-5006 -> ports 5000,5001,5005,5006`
-*  `If a single port is specified AND a number of ports is specified, then source traffic from the count specified starting with the starting port`
+*  `If a single port is specified AND a number of ports is specified, then source traffic from the number of sequential ports specified starting with the starting port`
 
 `udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]`
 
