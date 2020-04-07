@@ -23,6 +23,16 @@ UDPing has many useful features, including:
 
 `udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]`
 
+    udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> -s <starting port>|<source port descriptor> [-n <number of ports>] -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> [-v] [-q]
+        Source port descriptor should be a set of ranges separated by commas.  Each range can either be a port, or a range of ports separated by a dash.  For example:
+            5000 -> port 5000
+            5000-5009 -> ports 5000,5001,...,5009
+            5000,5005,5010 -> ports 5000,5005,5010
+            5000-5001,5005-5006 -> ports 5000,5001,5005,5006
+        If a single port is specified AND a number of ports is specified, then source traffic from the number of sequential ports specified starting with the starting port
+    
+    udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds> [-s <statsd host:port>] [-v] [-q]
+
 ## How it works
 
 The UDPing client publishes a stream of UDP packets from a client to a server with a header and a varying length payload, with an average interval specified by the -d switch.  The payload size is randomized from zero to MAX - the size of the header, where MAX is specified by the -m switch on the client.  The packets are sent in groups according to a measurement period, specified by the -i switch.  Packets for a measurement period from a single port share a common GUID.  At the end of the measurement period, a control packet is sent from each port with the total packet count for the period.
