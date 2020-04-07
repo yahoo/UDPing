@@ -13,7 +13,7 @@ UDPing has many useful features, including:
 
 ## Usage
 
-`udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> -s <starting port> -n <number of ports> -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> [-v] [-q]`
+`udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> -s <starting port>|<source port descriptor> [-n <number of ports>] -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> [-v] [-q]`
 *  `Source port descriptor should be a set of ranges separated by commas.  Each range can either be a port, or a range of ports separated by a dash.  For example:`
    *  `5000 -> port 5000`
    *  `5000-5009 -> ports 5000,5001,...,5009`
