@@ -1,9 +1,9 @@
-default: client server
+default: clean client server
 
 CXX = g++
 COMMONOBJ = options.o delay.o protocol.o stats.o 
-CPPFLAGS = -I../include -I /home/y/include -g
-LDFLAGS = 
+CPPFLAGS = -I../include -g
+LDFLAGS =
 LIBS = -lrt -lm
 
 client: $(COMMONOBJ) client.o clientsession.o maclist.o ifinfo.o client.o options.o delay.o protocol.o
