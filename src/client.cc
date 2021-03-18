@@ -29,7 +29,7 @@ int main( int argc, char **argv ) {
     "  Source port descriptor should be a set of ranges separated by commas.\n  Each range can either be a port, or a range of ports separated by a dash.\n  For example:" << endl <<
     "    5000 -> port 5000" << endl <<
     "    5000-5009 -> ports 5000,5001,...,5009" << endl <<
-    "    5000,5005,5010 -> ports 5000,5005,5010" << endl << 
+    "    5000,5005,5010 -> ports 5000,5005,5010" << endl <<
     "    5000-5001,5005-5006 -> ports 5000,5001,5005,5006" << endl <<
     "  If a single port is specified AND a number of ports is specified, then source traffic\n  from the count specified starting with the starting port" << endl;
     if (getOptions()->getFlagOption('h')) {
@@ -39,7 +39,6 @@ int main( int argc, char **argv ) {
     string dstHost = getOptions()->getStringOption ('r', 1, usage.str(), "No remote hostname provided\n");
     int dstPort = getOptions()->parseIntOption('p', 1, 1024, 65536, usage.str(), "Port number is out of range 1024-65532\n");
     string srcIp = getOptions()->getStringOption ('l', 1, usage.str(), "No local IP provided\n");
-    //int startingPort = getOptions()->parseIntOption('s', 1, MIN_PORT, MAX_PORT, usage.str(), "Starting port is out of range MIN_PORT-MAX_PORT\n");
     string srcPorts = getOptions()->getStringOption('s', 1, usage.str(), "Please define a valid source port");
     int numPorts = getOptions()->parseIntOption('n', 0, 1, MAX_SOCKETS, usage.str(), "Number of ports is out of range 1-MAX_SOCKETS\n");
     if ((atoi(srcPorts.c_str()) > 0) && (numPorts > 0) && (string::npos == srcPorts.find_first_not_of("1234567890"))) {

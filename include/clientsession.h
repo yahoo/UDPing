@@ -26,7 +26,7 @@ class ClientSessionList {
     public:
         ClientSessionList (
                 string srcIp, string srcPorts, string dstHost, int dstPort,
-                string dstMacList, int interval, int maxPacketSize 
+                string dstMacList, int interval, int maxPacketSize
         );
         ~ClientSessionList ();
         ClientSession* getNextSession();
