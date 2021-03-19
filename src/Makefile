@@ -2,7 +2,7 @@ default: clean client server
 
 CXX = g++
 COMMONOBJ = options.o delay.o protocol.o stats.o 
-CPPFLAGS = -I../include -g
+CPPFLAGS = -I../include -g -std=c++0x
 LDFLAGS =
 LIBS = -lrt -lm
 

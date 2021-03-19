@@ -49,7 +49,7 @@ int main( int argc, char **argv ) {
         }
         int endingPort = startingPort + numPorts - 1;
         stringstream buffer;
-        buffer << to_string(startingPort) << "-" << to_string(endingPort);
+        buffer << to_string((long long)startingPort) << "-" << to_string((long long)endingPort);
         srcPorts = buffer.str();
     }
     int delay = getOptions()->parseIntOption('d', 1, 0, 1000, usage.str(), "Delay is out of range 0-1000 ms\n");
