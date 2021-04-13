@@ -11,26 +11,31 @@
 
 using namespace std;
 
-class StatsConsoleWriter {
-    public:
-        static void writeStats (Stats* stats, string guid, string peer, string hostname, int port);
-};
-
-class StatsStatsdWriter {
+class StatsWriter {
     private:
-        static int fd;
-        static sockaddr* sa;
+        char* receive_hostname;
+        int listen_port;
+        int fd;
+        sockaddr* statsd_sa;
+        sockaddr* tags_sa;
+        char* tags_metric;
+        int quiet;
+        void writeConsoleStats (string guid, string peer, int port, Stats* stats);
+        void writeStatsdStats (string guid, string peer, int port, Stats* stats);
+        void writeTagsStats (string guid, string peer, int port, Stats* stats);
     public:
-        static void writeStats (Stats* stats, string peer, int port, string hostname, int localPort, char* statsdInfo);
+        StatsWriter (string listen_hostname, string receive_hostname, int listen_port, char* statsdInfo, char* statsdTagInfo, char* statsdTagMetric, int quiet);
+        void writeStats (string guid, string peer, int port, Stats* stats);
 };
 
 class StatsWriterSet {
     private:
+        StatsWriter* writer;
         string guid;
         string peer;
         int port;
     public:
-        StatsWriterSet (string guid, string peer, int port);
+        StatsWriterSet (StatsWriter* writer, string guid, string peer, int port);
         void writeStats (Stats* stats);
 };
 

@@ -13,23 +13,25 @@ UDPing has many useful features, including:
 
 ## Usage
 
-    udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP> 
-      -s <starting port>|<source port descriptor> [-n <number of ports>] 
-      -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...> 
+    udping_client -r <remote hostname> -p <remote port> -d <delay> -l <local IP>
+      -s <starting port>|<source port descriptor> [-n <number of ports>]
+      -i <measurement interval seconds> -m <max packet size> -a <next-hop MAC,...>
       [-v] [-q]
         * Source port descriptor should be a set of ranges separated by commas.
-          Each range can either be a port, or a range of ports separated by a 
+          Each range can either be a port, or a range of ports separated by a
           dash.  For example:
             * 5000 -> port 5000
             * 5000-5009 -> ports 5000,5001,...,5009
             * 5000,5005,5010 -> ports 5000,5005,5010
             * 5000-5001,5005-5006 -> ports 5000,5001,5005,5006
-        * If a single port is specified AND a number of ports is specified, 
-          then source traffic from the number of sequential ports specified 
+        * If a single port is specified AND a number of ports is specified,
+          then source traffic from the number of sequential ports specified
           starting with the starting port
-    
-    udping_server -l <local hostname> -p <port number> -k <keepalive interval seconds>
-      [-s <statsd host:port>] [-v] [-q]
+
+    udping_server -l <listen hostname> -p <port number> -k <keepalive interval seconds>
+      [-r <receive hostname>] [-s <statsd host:port>]
+      [-t <tag based statsd host:port>] [-m <tag based statsd metric name>]
+      [-v] [-q]
 
 ## How it works
 
@@ -70,4 +72,3 @@ The header is defined by the following struct:
 A normal packet also includes a payload of random size, up to MAX - sizeof(packet), where MAX is specified by the -m switch on the client.
 
 This code is licensed under Apache License 2.0 as per the license file and contains code from the reference implementation in RFC 1071.
-

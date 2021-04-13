@@ -20,7 +20,7 @@ class ServerSession {
         Stats* stats;
         StatsWriterSet* statsWriters;
     public:
-        ServerSession (string peer, int port, packet* p);
+        ServerSession (StatsWriter* writer, string peer, int port, packet* p);
         ~ServerSession ();
         void writeStats();
         void recordSeq (seqnum_t seqNum);
@@ -39,13 +39,14 @@ class ServerSessionManager {
         map<string, ServerSession*> sourceMap;
         map<long, string> hostMap;
         int intervalPacketsReceived;
+        StatsWriter* writer;
         int keepalive;
     private:
         ServerSession* getServerSession (string peer, int port, packet* p);
         void sweepServerSessions ();
         void receivePing (packet* ph, struct timespec* rcvd, string peer, int port);
     public:
-        ServerSessionManager(int theKeepalive);
+        ServerSessionManager(StatsWriter* writer, int theKeepalive);
         int readNextPacket (int fd);
         void handleAlarm (int sig);
 };
