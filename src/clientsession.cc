@@ -117,7 +117,6 @@ ClientSession* ClientSessionList::getNextSession () {
     if (curSession == sessions.end()) {
         curSession = sessions.begin();
     }
-    //cout << "Fetching session for source port " << nextSession->getPort() << endl;
     return nextSession;
 }
 

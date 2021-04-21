@@ -18,13 +18,13 @@
 #include "constants.h"
 #include "serversession.h"
 
-ServerSession::ServerSession (string peer, int port, packet* p) {
+ServerSession::ServerSession (StatsWriter* writer, string peer, int port, packet* p) {
     this->minSeq = p->seqNum;
     this->maxSeq = p->seqNum;
     this->clientStartTime = p->clientStartTime;
     lastArrival = 0;
     stats = new Stats ();
-    statsWriters = new StatsWriterSet(p->guid, peer, port);
+    statsWriters = new StatsWriterSet(writer, p->guid, peer, port);
 }
 
 ServerSession::~ServerSession () {
@@ -59,7 +59,7 @@ ServerSession* ServerSessionManager::getServerSession (string peer, int port, pa
     if (!sessionMap.count(p->guid)) {
         stringstream source;
         source << peer << ":" << port;
-        ServerSession* ds = new ServerSession(peer, port, p);
+        ServerSession* ds = new ServerSession(this->writer, peer, port, p);
         // Set the successor for the outgoing session, so that when it times out it checks for
         // a gap in the packet sequence.  This would indicate a lost packet at the end of
         // a session.
@@ -125,11 +125,11 @@ int ServerSessionManager::readNextPacket (int fd) {
         string hostName = hostMap[remote.sin_addr.s_addr];
         if (hostName.empty()) {
             struct hostent* remoteName = gethostbyaddr(&(remote.sin_addr), sizeof(struct in_addr), AF_INET);
-	    if (remoteName) {
-            	hostName = hostMap[remote.sin_addr.s_addr] = remoteName->h_name;
-	    } else {
-		hostName = hostMap[remote.sin_addr.s_addr] =  inet_ntoa(remote.sin_addr);
-	    }
+            if (remoteName) {
+                hostName = hostMap[remote.sin_addr.s_addr] = remoteName->h_name;
+            } else {
+                hostName = hostMap[remote.sin_addr.s_addr] =  inet_ntoa(remote.sin_addr);
+            }
         }
         receivePing (ph, &tv, hostName, ntohs(remote.sin_port));
     }
@@ -138,13 +138,14 @@ int ServerSessionManager::readNextPacket (int fd) {
 
 static ServerSessionManager* theSessionManager = (ServerSessionManager*) NULL;
 
-ServerSessionManager::ServerSessionManager (int theKeepalive) {
+ServerSessionManager::ServerSessionManager (StatsWriter* writer, int theKeepalive) {
     if (theSessionManager) {
         err(1, "Attempt to create multiple session managers");
     }
     theSessionManager = this;
     intervalPacketsReceived = 0;
-    keepalive = theKeepalive;
+    this->writer = writer;
+    this->keepalive = theKeepalive;
 }
 
 void ServerSessionManager::handleAlarm (int sig) {

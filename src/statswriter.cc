@@ -7,35 +7,124 @@
 #include <cstring>
 #include <cstdlib>
 #include <sstream>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 
-int StatsStatsdWriter::fd = 0;
-sockaddr* StatsStatsdWriter::sa = 0;
+char DEFAULT_METRIC_NAME[] = "udping";
 
-StatsWriterSet::StatsWriterSet (string guid, string peer, int port) {
+StatsWriterSet::StatsWriterSet (StatsWriter* writer, string guid, string peer, int port) {
+    this->writer = writer;
     this->guid = guid;
     this->peer = peer;
     this->port = port;
 }
 
 void StatsWriterSet::writeStats (Stats* stats) {
-    char hostname[MAX_PEER + 1];
-    gethostname(hostname, MAX_PEER + 1);
-    char* statsdInfo = getOptions()->getStringOption('s', 0, "", "");
-    int localPort = getOptions()->parseIntOption('p', 1, 1024, 65536, "", "");
-    if (statsdInfo > (char*) 1) {
-        StatsStatsdWriter::writeStats(stats, peer, port, hostname, localPort, statsdInfo);
+    this->writer->writeStats(this->guid, this->peer, this->port, stats);
+}
+
+StatsWriter::StatsWriter (string listen_hostname, string receive_hostname, int listen_port, char* statsdInfo, char* statsdTagInfo, char* statsdTagMetric, int quiet) {
+    this->listen_port = listen_port;
+    this->quiet = quiet;
+
+    struct in_addr receive_addr;
+    struct hostent* ent = NULL;
+    if (inet_aton(receive_hostname.c_str(), &receive_addr)) {
+        ent = gethostbyaddr(&receive_addr, sizeof(struct in_addr), AF_INET);
     }
-    if (!getOptions()->getQuiet()) {
-        StatsConsoleWriter::writeStats(stats, guid, peer, hostname, port);
+    if (ent) {
+        int n = strlen(ent->h_name);
+        this->receive_hostname = new char[n + 1];
+        strncpy(this->receive_hostname, ent->h_name, n);
+        this->receive_hostname[n] = 0;
+    } else {
+        int n = receive_hostname.length();
+        this->receive_hostname = new char[n + 1];
+        strncpy(this->receive_hostname, receive_hostname.c_str(), n);
+        this->receive_hostname[n] = 0;
+    }
+
+    char* c = this->receive_hostname;
+    while (*c) {
+        if (*c == '.') {
+            *c = '_';
+        }
+        c++;
+    }
+
+    if (statsdInfo != NULL || statsdTagInfo != NULL) {
+        this->fd = makeSocket(listen_hostname, 0);
+    }
+
+    if (statsdInfo != NULL) {
+        int sdPort = 8125;
+        int n = strlen(statsdInfo);
+        char* sdInfo = new char[n + 1];
+        strncpy(sdInfo, statsdInfo, n);
+        sdInfo[n] = 0;
+        char* portPointer = strchr(sdInfo, ':');
+        if (portPointer) {
+            *portPointer = 0;
+            sdPort = atoi(portPointer + 1);
+        }
+        this->statsd_sa = getSockAddr(sdInfo, sdPort);
+    }
+
+    if (statsdTagInfo != NULL) {
+        int sdPort = 8125;
+        int n = strlen(statsdTagInfo);
+        char* sdInfo = new char[n + 1];
+        strncpy(sdInfo, statsdTagInfo, n);
+        sdInfo[n] = 0;
+        char* portPointer = strchr(sdInfo, ':');
+        if (portPointer) {
+            *portPointer = 0;
+            sdPort = atoi(portPointer + 1);
+        }
+        this->tags_sa = getSockAddr(sdInfo, sdPort);
+    }
+
+    if (statsdTagMetric == NULL) {
+        this->tags_metric = DEFAULT_METRIC_NAME;
+    } else {
+        int n = strlen(statsdTagMetric);
+        this->tags_metric = new char[n + 1];
+        strncpy(this->tags_metric, statsdTagMetric, n);
+        this->tags_metric[n] = 0;
     }
 }
 
-void StatsConsoleWriter::writeStats (Stats* stats, string guid, string peer, string hostname, int port) {
+void StatsWriter::writeStats (string guid, string peer, int port, Stats *stats) {
+    int n = peer.length();
+    char* peerCopy = new char[n + 1];
+    strncpy(peerCopy, peer.c_str(), n);
+    peerCopy[n] = 0;
+    char* c = peerCopy;
+    while (*c) {
+        if (*c == '.') {
+            *c = '_';
+        }
+        c++;
+    }
+
+    if (!this->quiet) {
+        writeConsoleStats(guid, peerCopy, port, stats);
+    }
+    if (this->statsd_sa) {
+        writeStatsdStats(guid, peerCopy, port, stats);
+    }
+    if (this->tags_sa) {
+        writeTagsStats(guid, peerCopy, port, stats);
+    }
+}
+
+void StatsWriter::writeConsoleStats (string guid, string peer, int port, Stats* stats) {
     printf ("{");
     printf ("\"from_host\":\"%s\",", peer.c_str());
-    printf ("\"to_host\":\"%s\",", hostname.c_str());
-    printf ("\"port\":\"%d\",", port);
+    printf ("\"from_port\":\"%d\",", port);
+    printf ("\"to_host\":\"%s\",", this->receive_hostname);
+    printf ("\"to_port\":\"%d\",", this->listen_port);
     printf ("\"guid\":\"%s\",", guid.c_str());
     printf ("\"count\":\"%d\",", stats->getCount());
     printf ("\"targetCount\":\"%d\",", stats->getTargetCount());
@@ -45,37 +134,22 @@ void StatsConsoleWriter::writeStats (Stats* stats, string guid, string peer, str
     printf ("}\n");
 }
 
-void StatsStatsdWriter::writeStats (Stats* stats, string peer, int port, string hostname, int localPort, char* statsdInfo) {
-    if (!fd) {
-        int sdPort = 8125;
-        int s;
-        char* sdInfo = new char[strlen(statsdInfo)];
-        string host = getOptions()->getStringOption('l', 1, "", "");
-        strcpy(sdInfo, statsdInfo);
-        char* portPointer = strchr(sdInfo, ':');
-        if (portPointer) {
-            *portPointer = 0;
-            sdPort = atoi(portPointer + 1);
-        }
-        fd = makeSocket(host, 0);
-        sa = getSockAddr(sdInfo, sdPort);
-        printf ("Sending to statsd at: %s:%d\n", sdInfo, sdPort);
-        delete sdInfo;
-    }
-    string peerCopy = peer;
-    string hostnameCopy = hostname;
-    char* c;
-    while (c = (char*) strchr(peerCopy.c_str(), '.')) {
-        *c = '_';
-    }
-    while (c = (char*) strchr(hostnameCopy.c_str(), '.')) {
-        *c = '_';
-    }
+void StatsWriter::writeStatsdStats (string guid, string peer, int port, Stats* stats) {
     stringstream stat("");
-    stat << peerCopy << "." << port << "." << hostnameCopy << "." << localPort << "." << "count" << ":" << stats->getCount() << "|c" << endl;
-    stat << peerCopy << "." << port << "." << hostnameCopy << "." << localPort << "." << "targetCount" << ":" << stats->getTargetCount() << "|c" << endl;
-    stat << peerCopy << "." << port << "." << hostnameCopy << "." << localPort << "." << "sum" << ":" << stats->getSum() << "|c" << endl;
-    stat << peerCopy << "." << port << "." << hostnameCopy << "." << localPort << "." << "sos" << ":" << stats->getSumOfSquares() << "|c" << endl;
-    stat << peerCopy << "." << port << "." << hostnameCopy << "." << localPort << "." << "max" << ":" << stats->getMax() << "|g" << endl;
-    sendto(fd, stat.str().c_str(), stat.str().length(), 0, sa, sizeof(sockaddr));
+    stat << peer << "." << port << "." << this->receive_hostname << "." << this->listen_port << "." << "count" << ":" << stats->getCount() << "|c" << endl;
+    stat << peer << "." << port << "." << this->receive_hostname << "." << this->listen_port << "." << "targetCount" << ":" << stats->getTargetCount() << "|c" << endl;
+    stat << peer << "." << port << "." << this->receive_hostname << "." << this->listen_port << "." << "sum" << ":" << stats->getSum() << "|c" << endl;
+    stat << peer << "." << port << "." << this->receive_hostname << "." << this->listen_port << "." << "sos" << ":" << stats->getSumOfSquares() << "|c" << endl;
+    stat << peer << "." << port << "." << this->receive_hostname << "." << this->listen_port << "." << "max" << ":" << stats->getMax() << "|g" << endl;
+    sendto(this->fd, stat.str().c_str(), stat.str().length(), 0, this->statsd_sa, sizeof(sockaddr));
+}
+
+void StatsWriter::writeTagsStats (string guid, string peer, int port, Stats* stats) {
+    stringstream stat("");
+    stat << this->tags_metric << ".count,from_host=" << peer << ",from_port=" << port << ",to_host=" << this->receive_hostname << ",to_port=" << this->listen_port << ":" << stats->getCount() << "|c" << endl;
+    stat << this->tags_metric << ".targetCount,from_host=" << peer << ",from_port=" << port << ",to_host=" << this->receive_hostname << ",to_port=" << this->listen_port << ":" << stats->getTargetCount() << "|c" << endl;
+    stat << this->tags_metric << ".sum,from_host=" << peer << ",from_port=" << port << ",to_host=" << this->receive_hostname << ",to_port=" << this->listen_port << ":" << stats->getSum() << "|c" << endl;
+    stat << this->tags_metric << ".sos,from_host=" << peer << ",from_port=" << port << ",to_host=" << this->receive_hostname << ",to_port=" << this->listen_port << ":" << stats->getSumOfSquares() << "|c" << endl;
+    stat << this->tags_metric << ".max,from_host=" << peer << ",from_port=" << port << ",to_host=" << this->receive_hostname << ",to_port=" << this->listen_port << ":" << stats->getMax() << "|g" << endl;
+    sendto(this->fd, stat.str().c_str(), stat.str().length(), 0, this->tags_sa, sizeof(sockaddr));
 }
