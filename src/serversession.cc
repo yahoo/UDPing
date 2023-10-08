@@ -78,19 +78,23 @@ void ServerSessionManager::sweepServerSessions () {
     time_t now = time(0);
     for (map<string, ServerSession*>::iterator it = sessionMap.begin(); it != sessionMap.end(); it++) {
         ServerSession* ds = it->second;
-        if (ds && (ds->getLastArrival() < now - keepalive)) {
-            // If the session has a successor, set the max packet index to one before the
-            // successor's minimum index to detect gaps in the packet sequence between sessions
-            if (sessionMap.find(ds->getSuccessor()) != sessionMap.end()) {
-                ServerSession* successor = sessionMap[ds->getSuccessor()];
-                if (successor) {
-                    ds->recordSeq(successor->getMinSeq() - 1);
+        if (ds) {
+            if (ds->getLastArrival() < now - keepalive) {
+                // If the session has a successor, set the max packet index to one before the
+                // successor's minimum index to detect gaps in the packet sequence between sessions
+                if (sessionMap.find(ds->getSuccessor()) != sessionMap.end()) {
+                    ServerSession* successor = sessionMap[ds->getSuccessor()];
+                    if (successor) {
+                        ds->recordSeq(successor->getMinSeq() - 1);
+                    }
                 }
+                ds->writeStats();
+                delete ds;
+                sessionMap.erase(it->first);
             }
-            ds->writeStats();
-            delete ds;
-            sessionMap.erase(it->first);
-       }
+        } else {
+            break;
+        }
     }
 }
 
