@@ -178,7 +178,11 @@ void ClientSession::increment() {
  * the ping header, sets the timestamp, and sends the ping
  */
 void ClientSession::sendPingPacket () {
-    clock_gettime(CLOCK_REALTIME, &(p.header.sent));
+    struct timespec ts;
+    //clock_gettime(CLOCK_REALTIME, &(p.header.sent));
+    clock_gettime(CLOCK_REALTIME, &ts);
+    p.header.sent_sec = ts.tv_sec;
+    p.header.sent_nsec = ts.tv_nsec;
     int size = rand() % this->parent->getMaxPacketSize();
     sendPacket(size);
 }

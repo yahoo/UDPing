@@ -20,8 +20,8 @@ StatsWriterSet::StatsWriterSet (StatsWriter* writer, string guid, string peer, i
     this->port = port;
 }
 
-void StatsWriterSet::writeStats (Stats* stats) {
-    this->writer->writeStats(this->guid, this->peer, this->port, stats);
+void StatsWriterSet::writeStats (Stats* stats, time_t now) {
+    this->writer->writeStats(this->guid, this->peer, this->port, stats, now);
 }
 
 StatsWriter::StatsWriter (string listen_hostname, string receive_hostname, int listen_port, char* statsdInfo, char* statsdTagInfo, char* statsdTagMetric, int quiet) {
@@ -95,7 +95,7 @@ StatsWriter::StatsWriter (string listen_hostname, string receive_hostname, int l
     }
 }
 
-void StatsWriter::writeStats (string guid, string peer, int port, Stats *stats) {
+void StatsWriter::writeStats (string guid, string peer, int port, Stats *stats, time_t now) {
     int n = peer.length();
     char* peerCopy = new char[n + 1];
     strncpy(peerCopy, peer.c_str(), n);
@@ -109,7 +109,7 @@ void StatsWriter::writeStats (string guid, string peer, int port, Stats *stats) 
     }
 
     if (!this->quiet) {
-        writeConsoleStats(guid, peerCopy, port, stats);
+        writeConsoleStats(guid, peerCopy, port, stats, now);
     }
     if (this->statsd_sa) {
         writeStatsdStats(guid, peerCopy, port, stats);
@@ -119,8 +119,9 @@ void StatsWriter::writeStats (string guid, string peer, int port, Stats *stats) 
     }
 }
 
-void StatsWriter::writeConsoleStats (string guid, string peer, int port, Stats* stats) {
+void StatsWriter::writeConsoleStats (string guid, string peer, int port, Stats* stats, time_t now) {
     printf ("{");
+    printf ("\"time\":\"%ld\",", now);
     printf ("\"from_host\":\"%s\",", peer.c_str());
     printf ("\"from_port\":\"%d\",", port);
     printf ("\"to_host\":\"%s\",", this->receive_hostname);

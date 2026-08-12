@@ -29,7 +29,7 @@ void dumpBuffer (char* buf) {
         return;
     }
     packet* ph = (packet*) buf;
-    printf ("%s:%ld:%d - %ld:%ld\n", ph->guid, ph->clientStartTime, ph->seqNum, ph->sent.tv_sec, ph->sent.tv_nsec);
+    printf ("%s:%d:%d - %d:%ld\n", ph->guid, ph->clientStartTime, ph->seqNum, ph->sent_sec, ph->sent_nsec);
 }
 
 int makeSocket (string host, int port) {
@@ -70,7 +70,8 @@ struct sockaddr* getSockAddr (string host, int port) {
 
     snprintf (portString, 100, "%d", port);
 
-    if (s = getaddrinfo (host.c_str(), portString, &hints, &addrinfo)) {
+    //if (s = getaddrinfo (host.c_str(), portString, &hints, &addrinfo)) {
+    if (s = getaddrinfo (host.c_str(), 0, &hints, &addrinfo)) {
         err(1, "getaddrinfo: %s\n", gai_strerror(s));
     } else {
         ret = new struct sockaddr;
@@ -181,7 +182,7 @@ int buildFrame (struct frame *etherFrame, uint8_t *srcMac, uint8_t *dstMac, uint
 uint16_t checksum (uint16_t *addr, int len)
 {
   int count = len;
-  register uint32_t sum = 0;
+  uint32_t sum = 0;
   uint16_t answer = 0;
 
   // Sum up 2-byte values until none or only one byte left.
@@ -211,7 +212,7 @@ uint16_t checksum (uint16_t *addr, int len)
 // This is a zero-copy rewrite of udp4 checksumming algorithm.
 uint16_t udp4_checksum2 (struct ip iphdr, struct udphdr udphdr, uint16_t *payload, int payloadlen)
 {
-    register uint32_t sum = 0;
+    uint32_t sum = 0;
 
     sum += (iphdr.ip_src.s_addr & 0xffff);
     sum += (iphdr.ip_src.s_addr >> 16);
