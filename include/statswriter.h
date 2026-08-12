@@ -5,6 +5,7 @@
 #include "protocol.h"
 #include <string>
 #include <set>
+#include <memory>
 
 #ifndef STATSWRITER__H
 #define STATSWRITER__H 1
@@ -20,12 +21,13 @@ class StatsWriter {
         sockaddr* tags_sa;
         char* tags_metric;
         int quiet;
-        void writeConsoleStats (string guid, string peer, int port, Stats* stats);
+
+        void writeConsoleStats (string guid, string peer, int port, Stats* stats, time_t now);
         void writeStatsdStats (string guid, string peer, int port, Stats* stats);
         void writeTagsStats (string guid, string peer, int port, Stats* stats);
     public:
         StatsWriter (string listen_hostname, string receive_hostname, int listen_port, char* statsdInfo, char* statsdTagInfo, char* statsdTagMetric, int quiet);
-        void writeStats (string guid, string peer, int port, Stats* stats);
+        void writeStats (string guid, string peer, int port, Stats* stats, time_t now);
 };
 
 class StatsWriterSet {
@@ -36,7 +38,7 @@ class StatsWriterSet {
         int port;
     public:
         StatsWriterSet (StatsWriter* writer, string guid, string peer, int port);
-        void writeStats (Stats* stats);
+        void writeStats (Stats* stats, time_t now);
 };
 
 #endif

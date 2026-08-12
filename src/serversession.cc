@@ -32,10 +32,10 @@ ServerSession::~ServerSession () {
     delete statsWriters;
 }
 
-void ServerSession::writeStats() {
+void ServerSession::writeStats(time_t now) {
     seqnum_t targetCount = 1 + maxSeq - minSeq;
     stats->setTargetCount(targetCount);
-    statsWriters->writeStats(stats);
+    statsWriters->writeStats(stats, now);
 }
 
 // This needs work to deal with out of order packets
@@ -76,7 +76,7 @@ ServerSession* ServerSessionManager::getServerSession (string peer, int port, pa
 void ServerSessionManager::sweepServerSessions () {
     int ix;
     time_t now = time(0);
-    for (map<string, ServerSession*>::iterator it = sessionMap.begin(); it != sessionMap.end(); it++) {
+    for (map<string, ServerSession*>::iterator it = sessionMap.begin(); it != sessionMap.end();) {
         ServerSession* ds = it->second;
         if (ds) {
             if (ds->getLastArrival() < now - keepalive) {
@@ -88,9 +88,11 @@ void ServerSessionManager::sweepServerSessions () {
                         ds->recordSeq(successor->getMinSeq() - 1);
                     }
                 }
-                ds->writeStats();
+                ds->writeStats(now);
                 delete ds;
-                sessionMap.erase(it->first);
+                it = sessionMap.erase(it);
+            } else {
+                it++;
             }
         } else {
             break;
@@ -103,8 +105,14 @@ void ServerSessionManager::receivePing (packet* ph, struct timespec* rcvd, strin
     ServerSession* ds = getServerSession(peer, port, ph);
     ds->setLastArrival(time(0));
     ds->recordSeq(ph->seqNum);
-    double elapsed = 1000000000L * (rcvd->tv_sec - ph->sent.tv_sec) + rcvd->tv_nsec - ph->sent.tv_nsec;
-    ds->getStats()->addDataPoint (elapsed/1000000);
+    double elapsed = rcvd->tv_nsec;
+    elapsed -= ph->sent_nsec;
+    elapsed /= 1000000000L;
+    elapsed += rcvd->tv_sec;
+    elapsed -= ph->sent_sec;
+    elapsed *= 1000;
+    //double elapsed = rcvd->tv_sec - ph->sent_sec + (rcvd->tv_nsec - ph->sent_nsec)/1000000000L;
+    ds->getStats()->addDataPoint (elapsed);
     sweepServerSessions();
 }
 
@@ -132,7 +140,7 @@ int ServerSessionManager::readNextPacket (int fd) {
             if (remoteName) {
                 hostName = hostMap[remote.sin_addr.s_addr] = remoteName->h_name;
             } else {
-                hostName = hostMap[remote.sin_addr.s_addr] =  inet_ntoa(remote.sin_addr);
+                hostName = hostMap[remote.sin_addr.s_addr] = inet_ntoa(remote.sin_addr);
             }
         }
         receivePing (ph, &tv, hostName, ntohs(remote.sin_port));

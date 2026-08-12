@@ -22,7 +22,7 @@ class ServerSession {
     public:
         ServerSession (StatsWriter* writer, string peer, int port, packet* p);
         ~ServerSession ();
-        void writeStats();
+        void writeStats(time_t now);
         void recordSeq (seqnum_t seqNum);
         void setSuccessor (string successor) {this->successor = successor;}
         string getSuccessor () {return successor;}

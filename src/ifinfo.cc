@@ -90,4 +90,5 @@ int getIfInfo (string ip, int* ifIndex, uint8_t *srcMac) {
         return (-1);
     }
     printf ("Index is %i\n", *ifIndex);
+    return 0;
 }
